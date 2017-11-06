@@ -1,10 +1,14 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.http import JsonResponse
 
 from .helpers.cryptocurrencies_helper import *
 
+'''
+Shows welcome page
+'''
 def index(request):
-    return HttpResponse("Welcome the the currencies playground.")
+    return render(request, 'playground/index.html')
 
 
 '''

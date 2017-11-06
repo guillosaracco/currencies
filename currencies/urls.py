@@ -17,6 +17,6 @@ from django.conf.urls import include, url
 from django.contrib import admin
 
 urlpatterns = [
-    url(r'^playground/', include('playground.urls')),
+    url(r'^playground/', include('playground.urls', namespace="playground")),
     url(r'^admin/', admin.site.urls),
 ]
