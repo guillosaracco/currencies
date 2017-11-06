@@ -27,9 +27,8 @@ currency
 currency + date
     -> returns the number of units of a random
         product that can be bought from amazon
-        considering the difference between the
-        currency's value at the given date
-        and the currency's value now.
+        considering the currency's value at
+        the given date.
 if amz_product_id is provided,
 the endpoint will return results with respect
 to that product.
@@ -45,11 +44,11 @@ def cryptocurrencies(request):
     if response_type == "currency":
         response = CH.response_for_currency(params)
     elif response_type == "currency_date":
-        response = { "TO-DO" : "currency_date" }
+        response = CH.response_for_currency_date(params)
     elif response_type == "currency_product":
-        response = { "TO-DO" : "currency_product" }
+        response = CH.response_for_currency_product(params)
     elif response_type == "currency_date_product":
-        response = { "TO-DO" : "currency_date_product" }
+        response = CH.response_for_currency_date_product(params)
     else:
         response = dict(msg="The only parameter required is currency. Ex(currency=BTC)")
 
