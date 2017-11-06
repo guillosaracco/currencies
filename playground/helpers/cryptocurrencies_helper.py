@@ -20,7 +20,7 @@ class CryptocurrenciesHelper():
                         "B01J24C0TI" : 229.99 }
 
     '''
-    Determines what type of answer should be provided
+    Determines what type of response should be provided
     based on the parameters included in the request.
 
     Returns one of the following:
@@ -181,9 +181,11 @@ class CryptocurrenciesHelper():
 
 
     '''
-    Gets the currency value from the params dict
+    Gets the currency value from the params dict.
+
     Returns the name of the currency if it is one
     of the SUPPORTED_CURRENCIES.
+
     Otherwise, it returns None.
     '''
     @staticmethod
@@ -225,6 +227,31 @@ class CryptocurrenciesHelper():
                 return (timestamp, "")
 
 
+    '''
+    Builds and returns the response dict based on the inputs
+    received.
+
+    Example Inputs:
+    - currency: "BTC"
+    - currency_value: 1200.12
+    - product_price: 35.99
+    - amz_product_id: "EJ09LSELF0"
+    - Timestamp (optional): 1446236702
+
+    Example output:
+    {
+        "data": {
+            "units": 30,
+            "amz_product_id":"B01J24C0TI",
+            "product_price": 229.99,
+            "change": 208.07,
+            "currency_value": 7107.77,
+            "msg": "You can buy 30 units of the product with 1 BTC.",
+            "product_url": "https://www.amazon.com/gp/product/B01J24C0TI"
+        },
+        "response": "ok"
+    }
+    '''
     @staticmethod
     def build_response(currency, currency_value, product_price,
                        amz_product_id, timestamp=None):
@@ -307,10 +334,11 @@ class CryptocurrenciesHelper():
 
     '''
     Given a cryptocurrency, and optionally a timestamp,
-    returns the current USD value as a float.
+    returns the current USD value of the cryptocurrency
+    as a float.
 
     If a timestamp is provided, it returns the price
-    at the given date-time.
+    at the given time.
 
     If no timestamp is provided, it returns the latest price.
 
