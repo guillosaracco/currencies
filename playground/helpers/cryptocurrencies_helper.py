@@ -2,6 +2,8 @@ import math
 import time
 import datetime
 import requests
+from bs4 import BeautifulSoup as bs
+import random
 
 
 '''
@@ -11,6 +13,11 @@ Defines a helper class for the cryptocurrencies view
 class CryptocurrenciesHelper():
 
     SUPPORTED_CURRENCIES = ["BTC", "LTC", "ETH"]
+    RANDOM_PRODUCTS = { "B01MQWUXZS" : 159.99,
+                        "B00EMKLSSM" : 94.75,
+                        "B06XDP7B71" : 9.99,
+                        "B01LMHI37Q" : 689.00,
+                        "B01J24C0TI" : 229.99 }
 
     '''
     Determines what type of answer should be provided
@@ -57,7 +64,13 @@ class CryptocurrenciesHelper():
 
         (product_price, amz_product_id, msg) = CH.get_amz_product_price()
 
-        response = CH.build_response(currency, currency_value, product_price, amz_product_id)
+        if product_price == None:
+            return dict(msg=msg, response="error")
+
+        response = CH.build_response(currency,
+                                     currency_value,
+                                     product_price,
+                                     amz_product_id)
 
         return response
 
@@ -80,14 +93,21 @@ class CryptocurrenciesHelper():
         if timestamp == None:
             return dict(msg=msg, response="error")
 
-        (currency_value, msg) = CH.get_currency_value(currency)
+        (currency_value, msg) = CH.get_currency_value(currency, timestamp)
 
         if currency_value == None:
             return dict(msg=msg, response="error")
 
         (product_price, amz_product_id, msg) = CH.get_amz_product_price()
 
-        response = CH.build_response(currency, currency_value, product_price, amz_product_id, timestamp)
+        if product_price == None:
+            return dict(msg=msg, response="error")
+
+        response = CH.build_response(currency,
+                                     currency_value,
+                                     product_price,
+                                     amz_product_id,
+                                     timestamp)
 
         return response
 
@@ -115,7 +135,10 @@ class CryptocurrenciesHelper():
         if product_price == None:
             return dict(msg=msg, response="error")
 
-        response = CH.build_response(currency, currency_value, product_price, amz_product_id)
+        response = CH.build_response(currency,
+                                     currency_value,
+                                     product_price,
+                                     amz_product_id)
 
         return response
 
@@ -138,14 +161,21 @@ class CryptocurrenciesHelper():
         if timestamp == None:
             return dict(msg=msg, response="error")
 
-        (currency_value, msg) = CH.get_currency_value(currency)
+        (currency_value, msg) = CH.get_currency_value(currency, timestamp)
 
         if currency_value == None:
             return dict(msg=msg, response="error")
 
         (product_price, amz_product_id, msg) = CH.get_amz_product_price(request.get("amz_product_id"))
 
-        response = CH.build_response(currency, currency_value, product_price, amz_product_id, timestamp)
+        if product_price == None:
+            return dict(msg=msg, response="error")
+
+        response = CH.build_response(currency,
+                                     currency_value,
+                                     product_price,
+                                     amz_product_id,
+                                     timestamp)
 
         return response
 
@@ -165,7 +195,8 @@ class CryptocurrenciesHelper():
         if currency in CH.SUPPORTED_CURRENCIES:
             return (currency, "")
         else:
-            return (None, "This endpoint only supports the following cryptocurrencies: %s" % CH.SUPPORTED_CURRENCIES)
+            return (None, "This endpoint only supports the following "
+                    "cryptocurrencies: %s" % CH.SUPPORTED_CURRENCIES)
 
 
     '''
@@ -195,42 +226,56 @@ class CryptocurrenciesHelper():
 
 
     @staticmethod
-    def build_response(currency, currency_value, product_price, amz_product_id, timestamp=None):
+    def build_response(currency, currency_value, product_price,
+                       amz_product_id, timestamp=None):
         CH = CryptocurrenciesHelper
 
-        (units, change, msg) = CH.compare_currency_value_and_product_price(currency, currency_value, product_price, timestamp)
+        (units, change, msg) = CH.compare_currency_value_and_product_price(currency,
+                                                                           currency_value,
+                                                                           product_price,
+                                                                           timestamp)
 
         response = dict(
                 response="ok",
                 data=dict(
                         amz_product_id=amz_product_id,
                         product_url="https://www.amazon.com/gp/product/" + amz_product_id,
+                        product_price=product_price,
                         units=units,
                         change=change,
                         msg=msg,
+                        currency_value=currency_value,
                     )
-            )
+                )
 
         return response
 
 
     '''
-    Given a currency_value and product_price, compares both values
-    to determine:
-    - how many units of the product can be bought.
+    Given a currency_value and product_price,
+    it compares both values to determine
+    how many units of the product can be bought.
 
     returns (units, change, msg)
 
-    units: the number of units that can be bought with the currency_value.
-    change: the spare change.
-    msg:
+    - units: the number of units that can be bought
+    with the currency_value.
+    - change: the spare change.
+    - msg:
         if currency_value >= product_price
-            You can buy 248 units of the product with 1 BTC.
+            "You can buy 248 units of the product with 1 BTC."
         else
-            You need at least 3 LTC to buy 1 unit of the product.
+            "You need at least 3 LTC to buy 1 unit of the product."
 
     '''
-    def compare_currency_value_and_product_price(currency, currency_value, product_price, timestamp=None):
+    def compare_currency_value_and_product_price(currency,
+                                                 currency_value,
+                                                 product_price,
+                                                 timestamp=None):
+        if currency_value == 0:
+            msg = "At this point in time %s was worth nothing." % currency
+            return (0, 0, msg)
+
         units = currency_value / product_price
         timestamp_now = time.mktime(datetime.datetime.now().timetuple())
 
@@ -261,26 +306,36 @@ class CryptocurrenciesHelper():
 
 
     '''
-    Given a cryptocurrency, returns the current USD value.
-    Ex: BTC -> 7533.53
+    Given a cryptocurrency, and optionally a timestamp,
+    returns the current USD value as a float.
+
+    If a timestamp is provided, it returns the price
+    at the given date-time.
+
+    If no timestamp is provided, it returns the latest price.
+
+    Ex: "BTC" -> 7533.53
     '''
     @staticmethod
     def get_currency_value(currency, timestamp=None):
         CH = CryptocurrenciesHelper
 
         if currency not in CH.SUPPORTED_CURRENCIES:
-            return (None, "This endpoint only supports the following cryptocurrencies: %s" % CH.SUPPORTED_CURRENCIES)
+            return (None, "This endpoint only supports the "
+                "following cryptocurrencies: %s" % CH.SUPPORTED_CURRENCIES)
 
         value = None
         if timestamp is not None:
             try:
-                r = requests.get('https://min-api.cryptocompare.com/data/pricehistorical?fsym=%s&tsyms=USD&ts=%s' % (currency, timestamp))
+                r = requests.get("https://min-api.cryptocompare.com"
+                    "/data/pricehistorical?fsym=%s&tsyms=USD&ts=%s" % (currency, timestamp))
                 value = r.json().get(currency).get("USD")
             except Exception:
                 return (None, "There was an error getting the currency value.")
         else:
             try:
-                r = requests.get('https://min-api.cryptocompare.com/data/price?fsym=%s&tsyms=USD' % currency)
+                r = requests.get("https://min-api.cryptocompare.com"
+                    "/data/price?fsym=%s&tsyms=USD" % currency)
                 value = r.json().get("USD")
             except Exception:
                 return (None, "There was an error getting the currency value.")
@@ -293,7 +348,8 @@ class CryptocurrenciesHelper():
     Gets the price of an amazon product.
 
     If amz_product_id is provided,
-    it will return the price for that product.
+    it will find the price on amazon and return
+    the value.
 
     If no product information is provided,
     it will return a random amz_product_id and its price.
@@ -302,7 +358,48 @@ class CryptocurrenciesHelper():
     '''
     @staticmethod
     def get_amz_product_price(amz_product_id=None):
+        CH = CryptocurrenciesHelper
+
         if amz_product_id is not None:
-            return (29.99, amz_product_id, "")
+            return CH.get_price_from_amazon(amz_product_id)
         else:
-            return (349.99, "ASD9UFJ90", "")
+            return CH.get_random_amazon_product()
+
+
+    '''
+    Takes in an amazon product id and returns a tuple
+    with the price of the product, the product id and
+    an optional message.
+
+    If for any reason, the price cannot be found,
+    it returns an error message.
+    '''
+    @staticmethod
+    def get_price_from_amazon(amz_product_id):
+        price = None
+
+        try:
+            r = requests.get("https://www.amazon.com/gp/product/%s" % amz_product_id)
+            html = r.text
+            soup = bs(html, 'html.parser')
+            price_string = soup.find(id="priceblock_ourprice").get_text()
+        except Exception:
+            return (None, amz_product_id, "The price for the given product could not be found.")
+
+        try:
+            price = float(price_string[1:])
+        except Exception:
+            return (None, amz_product_id, "An error occured while getting the product price. Please try again.")
+
+        return (price, amz_product_id, "")
+
+
+    '''
+    Returns a random product from CryptocurrenciesHelper.RANDOM_PRODUCTS
+    '''
+    @staticmethod
+    def get_random_amazon_product():
+        amz_product_id, price = random.choice(list(CryptocurrenciesHelper.RANDOM_PRODUCTS.items()))
+
+        return (price, amz_product_id, "")
+

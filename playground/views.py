@@ -8,7 +8,7 @@ def index(request):
 
 
 '''
-An endpoint for questions about cryptocurrencies
+An endpoint for requests about cryptocurrencies
 
 A request can have parameters such as:
 currency=BTC

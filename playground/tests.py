@@ -187,3 +187,42 @@ class CryptocurrenciesHelperMethodsTests(TestCase):
         self.assertEqual(msg, "")
 
 
+    # tests for get_price_from_amazon
+    def test_get_price_from_amazon_with_valid_product_id(self):
+        """
+        If a valid amz_product_id is provided,
+        it should return the product's price.
+        """
+        input_amz_product_id = "B003EM8008"
+        expected_message = ""
+        expected_amz_product_id = input_amz_product_id
+        expected_price = 8.39
+        (price, amz_product_id, msg) = CryptocurrenciesHelper.get_price_from_amazon(input_amz_product_id)
+        self.assertEqual(price, expected_price)
+        self.assertEqual(amz_product_id, expected_amz_product_id)
+        self.assertEqual(msg, expected_message)
+
+    def test_get_price_from_amazon_with_invalid_product_id(self):
+        """
+        If an invalid amz_product_id is provided,
+        it should return an error message.
+        """
+        input_amz_product_id = "AAAAAAAAAA"
+        expected_message = "The price for the given product could not be found."
+        expected_amz_product_id = input_amz_product_id
+        expected_price = None
+        (price, amz_product_id, msg) = CryptocurrenciesHelper.get_price_from_amazon(input_amz_product_id)
+        self.assertEqual(price, expected_price)
+        self.assertEqual(amz_product_id, expected_amz_product_id)
+        self.assertEqual(msg, expected_message)
+
+
+    # tests for get_random_amazon_product
+    def test_get_random_amazon_product(self):
+        """
+        It should return values from CryptocurrenciesHelper.RANDOM_PRODUCTS
+        """
+        (price, amz_product_id, msg) = CryptocurrenciesHelper.get_random_amazon_product()
+        self.assertEqual(price in CryptocurrenciesHelper.RANDOM_PRODUCTS.values(), True)
+        self.assertEqual(amz_product_id in CryptocurrenciesHelper.RANDOM_PRODUCTS.keys(), True)
+        self.assertEqual(price, CryptocurrenciesHelper.RANDOM_PRODUCTS.get(amz_product_id))
